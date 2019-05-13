@@ -105,6 +105,7 @@ class COCODemo(object):
         masks_per_dim=2,
         min_image_size=224,
     ):
+        print('predictor.py: init')
         self.cfg = cfg.clone()
         self.model = build_detection_model(cfg)
         self.model.eval()
@@ -169,7 +170,7 @@ class COCODemo(object):
                 of the detection properties can be found in the fields of
                 the BoxList via `prediction.fields()`
         """
-        predictions = self.compute_prediction(image)
+        predictions, features = self.compute_prediction(image)
         top_predictions = self.select_top_predictions(predictions)
 
         result = image.copy()
@@ -182,7 +183,7 @@ class COCODemo(object):
             result = self.overlay_keypoints(result, top_predictions)
         result = self.overlay_class_names(result, top_predictions)
 
-        return result
+        return result, features
 
     def compute_prediction(self, original_image):
         """
@@ -202,7 +203,7 @@ class COCODemo(object):
         image_list = image_list.to(self.device)
         # compute predictions
         with torch.no_grad():
-            predictions = self.model(image_list)
+            predictions,features = self.model(image_list)
         predictions = [o.to(self.cpu_device) for o in predictions]
 
         # always single image is passed at a time
@@ -219,7 +220,7 @@ class COCODemo(object):
             # always single image is passed at a time
             masks = self.masker([masks], [prediction])[0]
             prediction.add_field("mask", masks)
-        return prediction
+        return prediction,features
 
     def select_top_predictions(self, predictions):
         """
