@@ -8,6 +8,7 @@ import numpy as np
 import os
 import torch
 import json
+import shutil
 
 # this makes our figures bigger
 pylab.rcParams['figure.figsize'] = 20, 12
@@ -31,7 +32,7 @@ coco_demo = COCODemo(
 # extract features and masks
 asset_dir = '/home/wzhou14fall/scans/out/'   # directory that contains extracted images
 json_dir = '/home/wzhou14fall/selected_frame.json'
-output_dir = '/home/wzhou14fall/output' 
+output_dir = '/home/wzhou14fall/output3' 
 
 scenes = os.listdir(asset_dir)
 if not os.path.isdir(output_dir):
@@ -58,6 +59,13 @@ with open(json_dir, 'r') as json_file:
             if not os.path.isdir(scene_output_dir):
                 os.mkdir(scene_output_dir)
                 
+            features_dir = os.path.join(scene_output_dir, 'features')
+            if not os.path.isdir(features_dir):
+                os.mkdir(features_dir)
+            masks_dir = os.path.join(scene_output_dir, 'masks')
+            if not os.path.isdir(masks_dir):
+                os.mkdir(masks_dir)
+                
             for model in models:
                 info[model['id_cad']] = {}
                 for frame in model['selected_frames']:
@@ -77,18 +85,15 @@ with open(json_dir, 'r') as json_file:
                     frame_id = frame.split('.')[0]
                     print(frame_id)
                     
-                    features_dir = os.path.join(scene_output_dir, 'features')
-                    if not os.path.isdir(features_dir):
-                        os.mkdir(features_dir)
-                    masks_dir = os.path.join(scene_output_dir, 'masks')
-                    if not os.path.isdir(masks_dir):
-                        os.mkdir(masks_dir)
+                   
                     
                     
                     features_fn = 'features/'+ str(frame_id)+'.features'
                     masks_fn = 'masks/' + str(frame_id)+'.masks'
 
-                    torch.save(features, str(scene_output_dir)+'/'+ features_fn)
+                    #np.savetxt(str(scene_output_dir)+'/'+ masks_fn, masks, delimiter=',') 
+                    #masks.tofile(str(scene_output_dir)+'/'+ masks_fn, sep=",",format="%s")
+                    torch.save(features[1:], str(scene_output_dir)+'/'+ features_fn)
 
                     with open(str(scene_output_dir)+'/'+ masks_fn, 'w') as outfile:
                         outfile.write('# Array shape: {0}\n'.format(masks.shape))
@@ -102,9 +107,11 @@ with open(json_dir, 'r') as json_file:
                     frame_dict['labels'] = labels
 
                     info[model['id_cad']][frame] = frame_dict
-                    #break
+                
                     
             info_all[scene_id] = info
+            shutil.make_archive(masks_dir, 'zip', masks_dir)
+            shutil.rmtree(masks_dir)
                     
                     
 output_json_dir = str(output_dir)+'/'+ 'info.json'
